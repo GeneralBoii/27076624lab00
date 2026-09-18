@@ -28,45 +28,39 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from helpers.dataloader import get_data_path, load_image  # noqa: F401
 
+
 class SimpleImageProcessing:
-    """A simple image-processing engine with blur and sharpening methods.
-
-    No constructor arguments are needed — just instantiate and call the methods.
-
-    Example
-    -------
-    >>> proc = SimpleImageProcessing()
-    >>> blurred   = proc.add_blur(image, ksize=21)
-    >>> sharpened = proc.add_sharpen(image, strength=2.0)
-    """
+   
+    
 
     def add_blur(self, image, **kwargs):
-        """Apply Gaussian blur to an image.
+        ksize = kwargs.get("ksize", 15)
 
-        Args:
-            image  (ndarray): H × W × C or H × W input image (uint8).
-            **kwargs:
-                ksize (int): Gaussian kernel size — must be a positive odd
-                             integer (default 15).
+        if ksize <= 0 or ksize % 2 == 0:
+            raise ValueError("ksize must be a positive odd interger")
 
-        Returns:
-            ndarray: Blurred image, same shape and dtype as input.
-        """
-        raise NotImplementedError("Implement this method")
+        return cv2.GaussianBlur(image, (ksize,ksize), 0)
 
     def add_sharpen(self, image, **kwargs):
-        """Sharpen an image using an unsharp mask.
+        ksize = kwargs.get("ksize", 15)
+        strength = kwargs.get("strength", 1.5)
 
-        Subtracts a blurred version from the original, scaled by 'strength',
-        to enhance high-frequency detail.
+        if ksize <= 0 or ksize % 2 == 0:
+            raise ValueError("ksize must be a positive odd integer")
 
-        Args:
-            image  (ndarray): H × W × C or H × W input image (uint8).
-            **kwargs:
-                ksize    (int):   Gaussian kernel size for the mask (default 15).
-                strength (float): How strongly to apply the sharpening (default 1.5).
+        blurred = cv2.GaussianBlur(image, (ksize, ksize), 0)
 
-        Returns:
-            ndarray: Sharpened image, same shape and dtype as input.
-        """
-        raise NotImplementedError("Implement this method")
+        image_float = image.astype(np.float32)
+        blurred_float = blurred.astype(np.float32)
+
+        sharpened = image_float + strength * (image_float - blurred_float)
+
+        sharpened = np.clip(sharpened, 0, 255)
+
+        return sharpened.astype(np.uint8)
+
+image = cv2.imread("/workspaces/27076624lab00/Data/960px-Le_sacre_Coeur_bordercropped.jpg")
+
+proc = SimpleImageProcessing()
+blurred   = proc.add_blur(image, ksize=21)
+sharpened = proc.add_sharpen(image, strength=2.0)
